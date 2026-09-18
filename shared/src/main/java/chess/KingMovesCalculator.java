@@ -24,10 +24,10 @@ public class KingMovesCalculator extends PieceMovesCalculator {
         return moves;
     }
 
-    private void addKingMove(Collection<ChessMove> moves, ChessBoard board, ChessPosition start, ChessPiece king, int rowChange, int columnChange) {
+    private void addKingMove(Collection<ChessMove> moves, ChessBoard board, ChessPosition start, ChessPiece king, int rowChange, int colChange) {
 
         int endRow = start.getRow() + rowChange;
-        int endColumn = start.getColumn() + columnChange;
+        int endColumn = start.getColumn() + colChange;
 
         if (!isOnBoard(endRow, endColumn)) {
             return;
