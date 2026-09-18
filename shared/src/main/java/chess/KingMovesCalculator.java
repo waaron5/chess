@@ -36,9 +36,7 @@ public class KingMovesCalculator extends PieceMovesCalculator {
         ChessPosition end = new ChessPosition(endRow, endColumn);
         ChessPiece otherPiece = board.getPiece(end);
 
-        // The king can't move onto a same team taken square
-        if (otherPiece != null
-                && otherPiece.getTeamColor() == king.getTeamColor()) {
+        if (!isEmptyOrFoe(board, king, end)) {
             return;
         }
 
