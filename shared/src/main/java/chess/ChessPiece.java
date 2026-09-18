@@ -52,9 +52,10 @@ public class ChessPiece {
      * @return Collection of valid moves
      */
     public Collection<ChessMove> pieceMoves(ChessBoard board, ChessPosition myPosition) {
-        ChessPiece piece = board.getPiece(myPosition);
-        if (piece.getPieceType() == PieceType.PAWN) {
-            return
+        if (type == PieceType.PAWN) {
+            PawnMovesCalculator calculator = new PawnMovesCalculator();
+            return calculator.pieceMoves(board, myPosition);
         }
+        return pieceMoves(board, myPosition);
     }
 }
