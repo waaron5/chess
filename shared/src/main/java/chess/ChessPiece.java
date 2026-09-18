@@ -52,8 +52,19 @@ public class ChessPiece {
      * @return Collection of valid moves
      */
     public Collection<ChessMove> pieceMoves(ChessBoard board, ChessPosition myPosition) {
+
         if (type == PieceType.PAWN) {
             PawnMovesCalculator calculator = new PawnMovesCalculator();
+            return calculator.pieceMoves(board, myPosition);
+        }
+
+        if (type == PieceType.KING) {
+            KingMovesCalculator calculator = new KingMovesCalculator();
+            return calculator.pieceMoves(board, myPosition);
+        }
+
+        if (type == PieceType.KNIGHT) {
+            KnightMovesCalculator calculator = new KnightMovesCalculator();
             return calculator.pieceMoves(board, myPosition);
         }
         return pieceMoves(board, myPosition);
