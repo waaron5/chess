@@ -34,7 +34,6 @@ public class KingMovesCalculator extends PieceMovesCalculator {
         }
 
         ChessPosition end = new ChessPosition(endRow, endColumn);
-        ChessPiece otherPiece = board.getPiece(end);
 
         if (!isEmptyOrFoe(board, king, end)) {
             return;
