@@ -72,6 +72,11 @@ public class ChessPiece {
             BishopMovesCalculator calculator = new BishopMovesCalculator();
             return calculator.pieceMoves(board, myPosition);
         }
+
+        if (type == PieceType.ROOK) {
+            RookMovesCalculator calculator = new RookMovesCalculator();
+            return calculator.pieceMoves(board, myPosition);
+        }
         return pieceMoves(board, myPosition);
     }
 }
