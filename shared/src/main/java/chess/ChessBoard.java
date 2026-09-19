@@ -1,5 +1,7 @@
 package chess;
 
+import java.util.Arrays;
+
 /**
  * A chessboard that can hold and rearrange chess pieces.
  * <p>
@@ -39,6 +41,70 @@ public class ChessBoard {
      * (How the game of chess normally starts)
      */
     public void resetBoard() {
-        throw new RuntimeException("Not implemented");
+
+        // Remove everything on the board
+        squares = new ChessPiece[8][8];
+
+        ChessPiece.PieceType[] backRow = {
+                ChessPiece.PieceType.ROOK,
+                ChessPiece.PieceType.KNIGHT,
+                ChessPiece.PieceType.BISHOP,
+                ChessPiece.PieceType.QUEEN,
+                ChessPiece.PieceType.KING,
+                ChessPiece.PieceType.BISHOP,
+                ChessPiece.PieceType.KNIGHT,
+                ChessPiece.PieceType.ROOK
+        };
+
+        for (int column = 1; column <= 8; column++) {
+
+            // White pieces
+            addPiece(
+                    new ChessPosition(1, column),
+                    new ChessPiece(ChessGame.TeamColor.WHITE, backRow[column - 1])
+            );
+
+            addPiece(
+                    new ChessPosition(2, column),
+                    new ChessPiece(
+                            ChessGame.TeamColor.WHITE,
+                            ChessPiece.PieceType.PAWN
+                    )
+            );
+
+            // Black pieces
+            addPiece(
+                    new ChessPosition(7, column),
+                    new ChessPiece(
+                            ChessGame.TeamColor.BLACK,
+                            ChessPiece.PieceType.PAWN
+                    )
+            );
+
+            addPiece(
+                    new ChessPosition(8, column),
+                    new ChessPiece(ChessGame.TeamColor.BLACK, backRow[column - 1])
+            );
+        }
+    }
+
+    @Override
+    public boolean equals(Object object) {
+        if (this == object) {
+            return true;
+        }
+
+        if (!(object instanceof ChessBoard)) {
+            return false;
+        }
+
+        ChessBoard otherBoard = (ChessBoard) object;
+
+        return Arrays.deepEquals(squares, otherBoard.squares);
+    }
+
+    @Override
+    public int hashCode() {
+        return Arrays.deepHashCode(squares);
     }
 }
