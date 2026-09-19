@@ -11,10 +11,10 @@ public class BishopMovesCalculator extends PieceMovesCalculator {
 
         ChessPiece bishop = board.getPiece(start);
 
-        addMovesInDirection(moves, board, start, bishop, 1, 1);
-        addMovesInDirection(moves, board, start, bishop, 1, -1);
-        addMovesInDirection(moves, board, start, bishop, -1, 1);
-        addMovesInDirection(moves, board, start, bishop, -1, -1);
+        addMovesInDirection(moves, board, start, bishop, 1, 1); // right-up
+        addMovesInDirection(moves, board, start, bishop, 1, -1); // right-down
+        addMovesInDirection(moves, board, start, bishop, -1, 1); // left-up
+        addMovesInDirection(moves, board, start, bishop, -1, -1); // left-down
 
         return moves;
     }
@@ -35,7 +35,7 @@ public class BishopMovesCalculator extends PieceMovesCalculator {
 
             moves.add(new ChessMove(start, end, null));
 
-            // An enemy may be captured, but blocks squares behind it.
+            // A foe piece may be captured, but blocks squares behind it
             if (board.getPiece(end) != null) {
                 return;
             }
