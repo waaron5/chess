@@ -1,5 +1,6 @@
 package chess;
 
+import java.util.ArrayList;
 import java.util.Collection;
 
 /**
@@ -9,16 +10,20 @@ import java.util.Collection;
  * signature of the existing methods.
  */
 public class ChessGame {
+    private ChessBoard board;
+    private TeamColor teamTurn;
 
     public ChessGame() {
-
+        board = new ChessBoard();
+        board.resetBoard();
+        teamTurn = TeamColor.WHITE;
     }
 
     /**
      * @return Which team's turn it is
      */
     public TeamColor getTeamTurn() {
-        throw new RuntimeException("Not implemented");
+        return teamTurn;
     }
 
     /**
@@ -27,7 +32,7 @@ public class ChessGame {
      * @param team the team whose turn it is
      */
     public void setTeamTurn(TeamColor team) {
-        throw new RuntimeException("Not implemented");
+        teamTurn = team;
     }
 
     /**
@@ -46,7 +51,27 @@ public class ChessGame {
      * startPosition
      */
     public Collection<ChessMove> validMoves(ChessPosition startPosition) {
-        throw new RuntimeException("Not implemented");
+        ChessPiece piece = board.getPiece(startPosition);
+        if (piece == null) {
+            return null;
+        }
+
+        Collection<ChessMove> moves = new ArrayList<>();
+        for (ChessMove move : piece.pieceMoves(board, startPosition)) {
+            ChessPosition endPosition = move.getEndPosition();
+            ChessPiece capturedPiece = board.getPiece(endPosition);
+            board.addPiece(startPosition, null);
+            board.addPiece(endPosition, piece);
+
+            boolean leavesKingInCheck = isInCheck(piece.getTeamColor());
+
+            board.addPiece(startPosition, piece);
+            board.addPiece(endPosition, capturedPiece);
+            if (!leavesKingInCheck) {
+                moves.add(move);
+            }
+        }
+        return moves;
     }
 
     /**
