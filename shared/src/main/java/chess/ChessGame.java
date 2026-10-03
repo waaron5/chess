@@ -102,9 +102,46 @@ public class ChessGame {
      * @return True if the specified team is in check
      */
     public boolean isInCheck(TeamColor teamColor) {
-        throw new RuntimeException("Not implemented");
-    }
+        ChessPosition kingPosition = null;
+        for (int row = 1; row <= 8; row++) {
+            for (int column = 1; column <= 8; column++) {
+                ChessPosition position = new ChessPosition(row, column);
+                ChessPiece piece = board.getPiece(position);
+                if (piece != null && piece.getTeamColor() == teamColor
+                        && piece.getPieceType() == ChessPiece.PieceType.KING) {
+                    kingPosition = position;
+                }
+            }
+        }
 
+        if (kingPosition == null) {
+            return false;
+        }
+
+        for (int row = 1; row <= 8; row++) {
+            for (int column = 1; column <= 8; column++) {
+                ChessPosition position = new ChessPosition(row, column);
+                ChessPiece piece = board.getPiece(position);
+                if (piece == null || piece.getTeamColor() == teamColor) {
+                    continue;
+                }
+                if (piece.getPieceType() == ChessPiece.PieceType.PAWN) {
+                    int direction = piece.getTeamColor() == TeamColor.WHITE ? 1 : -1;
+                    if (row + direction == kingPosition.getRow()
+                            && Math.abs(column - kingPosition.getColumn()) == 1) {
+                        return true;
+                    }
+                } else {
+                    for (ChessMove move : piece.pieceMoves(board, position)) {
+                        if (move.getEndPosition().equals(kingPosition)) {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+        return false;
+    }
     /**
      * Determines if the given team is in checkmate
      *
