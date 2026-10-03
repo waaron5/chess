@@ -180,7 +180,7 @@ public class ChessGame {
         return board;
     }
 
-    private boolean hasValidMoves(TeamColor teamColor) {
+    private boolean hasNoValidMoves(TeamColor teamColor) {
         for (int row = 1; row <= 8; row++) {
             for (int column = 1; column <= 8; column++) {
                 ChessPosition position = new ChessPosition(row, column);
