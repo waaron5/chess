@@ -24,7 +24,7 @@ public class ChessServiceTests {
     private AuthData auth;
 
     @BeforeEach
-    public void setup() {
+    public void setup() throws Exception {
         dataAccess = new MemoryDataAccess();
         service = new ChessService(dataAccess);
         auth = service.register(user);
@@ -128,7 +128,7 @@ public class ChessServiceTests {
         assertError(assertThrows(ServiceException.class, () -> service.logout(token)), 401, "unauthorized");
         assertError(assertThrows(ServiceException.class, () -> service.listGames(token)), 401, "unauthorized");
         assertError(assertThrows(ServiceException.class, () -> service.createGame(token, "game")), 401, "unauthorized");
-        assertError(assertThrows(ServiceException.class, () -> service.joinGame(token, TeamColor.WHITE, 1)),
+        assertError(assertThrows(ServiceException.class, () -> service.joinGame(token, ChessGame.TeamColor.WHITE, 1)),
                 401, "unauthorized");
     }
 
@@ -176,8 +176,8 @@ public class ChessServiceTests {
     public void joinBothColorsPreservesGame() throws Exception {
         GameData game = service.createGame(auth.authToken(), "game");
         AuthData other = service.register(new UserData("other", "password", "other@example.com"));
-        service.joinGame(auth.authToken(), TeamColor.WHITE, game.gameID());
-        service.joinGame(other.authToken(), TeamColor.BLACK, game.gameID());
+        service.joinGame(auth.authToken(), ChessGame.TeamColor.WHITE, game.gameID());
+        service.joinGame(other.authToken(), ChessGame.TeamColor.BLACK, game.gameID());
         GameData updated = dataAccess.getGame(game.gameID());
 
         assertEquals(user.username(), updated.whiteUsername());
@@ -189,8 +189,8 @@ public class ChessServiceTests {
     @Test
     public void sameUserCanPlayBothColors() throws Exception {
         GameData game = service.createGame(auth.authToken(), "game");
-        service.joinGame(auth.authToken(), TeamColor.WHITE, game.gameID());
-        service.joinGame(auth.authToken(), TeamColor.BLACK, game.gameID());
+        service.joinGame(auth.authToken(), ChessGame.TeamColor.WHITE, game.gameID());
+        service.joinGame(auth.authToken(), ChessGame.TeamColor.BLACK, game.gameID());
 
         assertEquals(user.username(), dataAccess.getGame(game.gameID()).whiteUsername());
         assertEquals(user.username(), dataAccess.getGame(game.gameID()).blackUsername());
@@ -222,7 +222,7 @@ public class ChessServiceTests {
     @Test
     public void joinMissingGame() {
         ServiceException exception = assertThrows(ServiceException.class,
-                () -> service.joinGame(auth.authToken(), TeamColor.WHITE, 999));
+                () -> service.joinGame(auth.authToken(), ChessGame.TeamColor.WHITE, 999));
         assertError(exception, 400, "bad request");
     }
 
