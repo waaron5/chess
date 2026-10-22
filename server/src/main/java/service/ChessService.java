@@ -1,5 +1,8 @@
 package service;
 
+import chess.ChessGame.TeamColor;
+import model.GameData;
+import java.util.Collection;
 import dataaccess.DataAccess;
 import dataaccess.DataAccessException;
 import model.AuthData;
@@ -42,6 +45,43 @@ public class ChessService {
     public void logout(String authToken) throws ServiceException, DataAccessException {
         authenticate(authToken);
         dataAccess.deleteAuth(authToken);
+    }
+
+    public Collection<GameData> listGames(String authToken) throws ServiceException, DataAccessException {
+        authenticate(authToken);
+        return dataAccess.listGames();
+    }
+
+    public GameData createGame(String authToken, String gameName) throws ServiceException, DataAccessException {
+        authenticate(authToken);
+        if (isMissing(gameName)) {
+            throw new ServiceException(400, "bad request");
+        }
+        return dataAccess.createGame(gameName);
+    }
+
+    public void joinGame(String authToken, TeamColor playerColor, int gameID)
+            throws ServiceException, DataAccessException {
+        AuthData auth = authenticate(authToken);
+        GameData game = dataAccess.getGame(gameID);
+        if (playerColor == null || game == null) {
+            throw new ServiceException(400, "bad request");
+        }
+
+        String whiteUsername = game.whiteUsername();
+        String blackUsername = game.blackUsername();
+        if (playerColor == TeamColor.WHITE) {
+            if (whiteUsername != null) {
+                throw new ServiceException(403, "already taken");
+            }
+            whiteUsername = auth.username();
+        } else {
+            if (blackUsername != null) {
+                throw new ServiceException(403, "already taken");
+            }
+            blackUsername = auth.username();
+        }
+        dataAccess.updateGame(new GameData(gameID, whiteUsername, blackUsername, game.gameName(), game.game()));
     }
 
     private AuthData authenticate(String authToken) throws ServiceException, DataAccessException {
