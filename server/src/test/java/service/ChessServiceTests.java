@@ -1,7 +1,9 @@
 package service;
 
+import chess.ChessGame;
 import dataaccess.MemoryDataAccess;
 import model.AuthData;
+import model.GameData;
 import model.UserData;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -10,6 +12,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import java.util.Collection;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -127,6 +130,46 @@ public class ChessServiceTests {
         assertError(assertThrows(ServiceException.class, () -> service.createGame(token, "game")), 401, "unauthorized");
         assertError(assertThrows(ServiceException.class, () -> service.joinGame(token, TeamColor.WHITE, 1)),
                 401, "unauthorized");
+    }
+
+    @Test
+    public void createGameStoresStartingBoardAndUniqueID() throws Exception {
+        GameData first = service.createGame(auth.authToken(), "game");
+        GameData second = service.createGame(auth.authToken(), "game");
+
+        assertTrue(first.gameID() > 0);
+        assertNotEquals(first.gameID(), second.gameID());
+        assertEquals(first, dataAccess.getGame(first.gameID()));
+        assertEquals("game", first.gameName());
+        assertNull(first.whiteUsername());
+        assertNull(first.blackUsername());
+        assertEquals(new ChessGame(), first.game());
+    }
+
+    @ParameterizedTest
+    @NullAndEmptySource
+    @ValueSource(strings = {" "})
+    public void createGameBadRequest(String name) {
+        ServiceException exception = assertThrows(ServiceException.class, () -> service.createGame(auth.authToken(), name));
+        assertError(exception, 400, "bad request");
+        assertTrue(dataAccess.listGames().isEmpty());
+    }
+
+    @Test
+    public void listGamesEmpty() throws Exception {
+        assertTrue(service.listGames(auth.authToken()).isEmpty());
+    }
+
+    @Test
+    public void listGamesIncludesOtherUsersGames() throws Exception {
+        GameData first = service.createGame(auth.authToken(), "first");
+        AuthData other = service.register(new UserData("other", "password", "other@example.com"));
+        GameData second = service.createGame(other.authToken(), "second");
+        Collection<GameData> games = service.listGames(auth.authToken());
+
+        assertEquals(2, games.size());
+        assertTrue(games.contains(first));
+        assertTrue(games.contains(second));
     }
 
     private void assertError(ServiceException exception, int statusCode, String message) {
