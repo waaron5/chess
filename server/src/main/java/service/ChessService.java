@@ -28,6 +28,30 @@ public class ChessService {
         return createAuth(user.username());
     }
 
+    public AuthData login(UserData request) throws ServiceException, DataAccessException {
+        if (request == null || isMissing(request.username()) || isMissing(request.password())) {
+            throw new ServiceException(400, "bad request");
+        }
+        UserData user = dataAccess.getUser(request.username());
+        if (user == null || !user.password().equals(request.password())) {
+            throw new ServiceException(401, "unauthorized");
+        }
+        return createAuth(user.username());
+    }
+
+    public void logout(String authToken) throws ServiceException, DataAccessException {
+        authenticate(authToken);
+        dataAccess.deleteAuth(authToken);
+    }
+
+    private AuthData authenticate(String authToken) throws ServiceException, DataAccessException {
+        AuthData auth = dataAccess.getAuth(authToken);
+        if (auth == null) {
+            throw new ServiceException(401, "unauthorized");
+        }
+        return auth;
+    }
+
     private AuthData createAuth(String username) throws DataAccessException {
         AuthData auth = new AuthData(UUID.randomUUID().toString(), username);
         dataAccess.createAuth(auth);
