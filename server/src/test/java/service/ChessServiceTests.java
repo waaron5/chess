@@ -172,6 +172,53 @@ public class ChessServiceTests {
         assertTrue(games.contains(second));
     }
 
+    @Test
+    public void joinBothColorsPreservesGame() throws Exception {
+        GameData game = service.createGame(auth.authToken(), "game");
+        AuthData other = service.register(new UserData("other", "password", "other@example.com"));
+        service.joinGame(auth.authToken(), TeamColor.WHITE, game.gameID());
+        service.joinGame(other.authToken(), TeamColor.BLACK, game.gameID());
+        GameData updated = dataAccess.getGame(game.gameID());
+
+        assertEquals(user.username(), updated.whiteUsername());
+        assertEquals(other.username(), updated.blackUsername());
+        assertEquals(game.gameName(), updated.gameName());
+        assertEquals(game.game(), updated.game());
+    }
+
+    @Test
+    public void sameUserCanPlayBothColors() throws Exception {
+        GameData game = service.createGame(auth.authToken(), "game");
+        service.joinGame(auth.authToken(), TeamColor.WHITE, game.gameID());
+        service.joinGame(auth.authToken(), TeamColor.BLACK, game.gameID());
+
+        assertEquals(user.username(), dataAccess.getGame(game.gameID()).whiteUsername());
+        assertEquals(user.username(), dataAccess.getGame(game.gameID()).blackUsername());
+    }
+
+    @Test
+    public void joinOccupiedColors() throws Exception {
+        GameData game = service.createGame(auth.authToken(), "game");
+        AuthData other = service.register(new UserData("other", "password", "other@example.com"));
+        for (ChessGame.TeamColor color : ChessGame.TeamColor.values()) {
+            service.joinGame(auth.authToken(), color, game.gameID());
+            ServiceException exception = assertThrows(ServiceException.class,
+                    () -> service.joinGame(other.authToken(), color, game.gameID()));
+            assertError(exception, 403, "already taken");
+        }
+        assertEquals(user.username(), dataAccess.getGame(game.gameID()).whiteUsername());
+        assertEquals(user.username(), dataAccess.getGame(game.gameID()).blackUsername());
+    }
+
+    @Test
+    public void joinMissingColor() throws Exception {
+        GameData game = service.createGame(auth.authToken(), "game");
+        ServiceException exception = assertThrows(ServiceException.class,
+                () -> service.joinGame(auth.authToken(), null, game.gameID()));
+        assertError(exception, 400, "bad request");
+        assertEquals(game, dataAccess.getGame(game.gameID()));
+    }
+
     private void assertError(ServiceException exception, int statusCode, String message) {
         assertEquals(statusCode, exception.getStatusCode());
         assertEquals("Error: " + message, exception.getMessage());
