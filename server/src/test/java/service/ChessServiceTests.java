@@ -219,6 +219,34 @@ public class ChessServiceTests {
         assertEquals(game, dataAccess.getGame(game.gameID()));
     }
 
+    @Test
+    public void joinMissingGame() {
+        ServiceException exception = assertThrows(ServiceException.class,
+                () -> service.joinGame(auth.authToken(), TeamColor.WHITE, 999));
+        assertError(exception, 400, "bad request");
+    }
+
+    @Test
+    public void clearRemovesUsersGamesAndTokens() throws Exception {
+        service.createGame(auth.authToken(), "game");
+        AuthData other = service.login(user);
+        service.clear();
+
+        assertNull(dataAccess.getUser(user.username()));
+        assertNull(dataAccess.getAuth(auth.authToken()));
+        assertNull(dataAccess.getAuth(other.authToken()));
+        assertTrue(dataAccess.listGames().isEmpty());
+        assertError(assertThrows(ServiceException.class, () -> service.login(user)), 401, "unauthorized");
+        AuthData replacement = service.register(user);
+        assertTrue(service.listGames(replacement.authToken()).isEmpty());
+    }
+
+    @Test
+    public void clearCanBeRepeated() throws Exception {
+        service.clear();
+        assertDoesNotThrow(() -> service.clear());
+    }
+
     private void assertError(ServiceException exception, int statusCode, String message) {
         assertEquals(statusCode, exception.getStatusCode());
         assertEquals("Error: " + message, exception.getMessage());
