@@ -1,5 +1,7 @@
 package dataaccess.sql;
 
+import chess.ChessGame;
+import com.google.gson.Gson;
 import dataaccess.DataAccess;
 import dataaccess.DataAccessException;
 import dataaccess.DatabaseManager;
@@ -7,10 +9,14 @@ import model.AuthData;
 import model.GameData;
 import model.UserData;
 
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.Collection;
 
 public class SqlDataAccess implements DataAccess {
+    private final Gson gson = new Gson();
+
     private static final String[] CREATE_TABLES = {
             """
             CREATE TABLE IF NOT EXISTS users (
@@ -138,12 +144,42 @@ public class SqlDataAccess implements DataAccess {
 
     @Override
     public GameData createGame(String gameName) throws DataAccessException {
-        throw new UnsupportedOperationException("Not implemented yet");
+        ChessGame game = new ChessGame();
+        String sql = "INSERT INTO games (game_name, game) VALUES (?, ?)";
+        try (var connection = DatabaseManager.getConnection();
+             var statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            statement.setString(1, gameName);
+            statement.setString(2, gson.toJson(game));
+            statement.executeUpdate();
+            try (var keys = statement.getGeneratedKeys()) {
+                if (keys.next()) {
+                    return new GameData(keys.getInt(1), null, null, gameName, game);
+                }
+                throw new DataAccessException("failed to create game: no generated ID");
+            }
+        } catch (SQLException ex) {
+            throw new DataAccessException("failed to create game", ex);
+        }
     }
 
     @Override
     public GameData getGame(int gameID) throws DataAccessException {
-        throw new UnsupportedOperationException("Not implemented yet");
+        String sql = "SELECT game_id, white_username, black_username, game_name, game FROM games WHERE game_id = ?";
+        try (var connection = DatabaseManager.getConnection();
+             var statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, gameID);
+            try (var result = statement.executeQuery()) {
+                return result.next() ? readGame(result) : null;
+            }
+        } catch (SQLException ex) {
+            throw new DataAccessException("failed to get game", ex);
+        }
+    }
+
+    private GameData readGame(ResultSet result) throws SQLException {
+        return new GameData(result.getInt("game_id"), result.getString("white_username"),
+                result.getString("black_username"), result.getString("game_name"),
+                gson.fromJson(result.getString("game"), ChessGame.class));
     }
 
     @Override

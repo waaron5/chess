@@ -1,10 +1,10 @@
 package dataaccess.sql;
 
 import chess.ChessGame;
-import com.google.gson.Gson;
 import dataaccess.DataAccessException;
 import dataaccess.DatabaseManager;
 import model.AuthData;
+import model.GameData;
 import model.UserData;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -164,18 +164,51 @@ public class SqlDataAccessTests {
         assertEquals(auth, dataAccess.getAuth(auth.authToken()));
     }
 
+    @Test
+    public void createGamePersistsInitialStateAcrossInstances() throws Exception {
+        GameData created = dataAccess.createGame("King's game");
+        SqlDataAccess other = new SqlDataAccess();
+
+        assertTrue(created.gameID() > 0);
+        GameData expected = new GameData(created.gameID(), null, null, "King's game", new ChessGame());
+        assertEquals(expected, created);
+        GameData stored = other.getGame(created.gameID());
+        assertEquals(expected, stored);
+        assertNotSame(created.game(), stored.game());
+    }
+
+    @Test
+    public void createGamesWithSameNameUsesUniqueIDs() throws Exception {
+        GameData first = dataAccess.createGame("game");
+        GameData second = dataAccess.createGame("game");
+
+        assertTrue(first.gameID() > 0);
+        assertTrue(second.gameID() > 0);
+        assertNotEquals(first.gameID(), second.gameID());
+        assertEquals(first, dataAccess.getGame(first.gameID()));
+        assertEquals(second, dataAccess.getGame(second.gameID()));
+    }
+
+    @Test
+    public void getUnknownGameReturnsNull() throws Exception {
+        GameData created = dataAccess.createGame("game");
+
+        assertNull(dataAccess.getGame(0));
+        assertNull(dataAccess.getGame(-1));
+        assertNull(dataAccess.getGame(Integer.MAX_VALUE));
+        assertEquals(created, dataAccess.getGame(created.gameID()));
+    }
+
+    @Test
+    public void createGameWithNullNameFails() throws Exception {
+        assertThrows(DataAccessException.class, () -> dataAccess.createGame(null));
+        assertEquals(List.of(0, 0, 0), rowCounts());
+    }
+
     private void insertFixtures() throws Exception {
         dataAccess.createUser(user);
         dataAccess.createAuth(auth);
-        try (var connection = DatabaseManager.getConnection()) {
-            try (var statement = connection.prepareStatement(
-                    "INSERT INTO games (white_username, game_name, game) VALUES (?, ?, ?)")) {
-                statement.setString(1, "player");
-                statement.setString(2, "test game");
-                statement.setString(3, new Gson().toJson(new ChessGame()));
-                statement.executeUpdate();
-            }
-        }
+        dataAccess.createGame("test game");
     }
 
     private List<Integer> rowCounts() throws Exception {
