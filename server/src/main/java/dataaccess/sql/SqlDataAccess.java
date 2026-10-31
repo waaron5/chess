@@ -64,12 +64,34 @@ public class SqlDataAccess implements DataAccess {
 
     @Override
     public void createUser(UserData user) throws DataAccessException {
-        throw new UnsupportedOperationException("Not implemented yet");
+        String sql = "INSERT INTO users (username, password, email) VALUES (?, ?, ?)";
+        try (var connection = DatabaseManager.getConnection();
+             var statement = connection.prepareStatement(sql)) {
+            statement.setString(1, user.username());
+            statement.setString(2, user.password());
+            statement.setString(3, user.email());
+            statement.executeUpdate();
+        } catch (SQLException ex) {
+            throw new DataAccessException("failed to create user", ex);
+        }
     }
 
     @Override
     public UserData getUser(String username) throws DataAccessException {
-        throw new UnsupportedOperationException("Not implemented yet");
+        String sql = "SELECT username, password, email FROM users WHERE username = ?";
+        try (var connection = DatabaseManager.getConnection();
+             var statement = connection.prepareStatement(sql)) {
+            statement.setString(1, username);
+            try (var result = statement.executeQuery()) {
+                if (result.next()) {
+                    return new UserData(result.getString("username"), result.getString("password"),
+                            result.getString("email"));
+                }
+                return null;
+            }
+        } catch (SQLException ex) {
+            throw new DataAccessException("failed to get user", ex);
+        }
     }
 
     @Override

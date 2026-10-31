@@ -4,6 +4,7 @@ import chess.ChessGame;
 import com.google.gson.Gson;
 import dataaccess.DataAccessException;
 import dataaccess.DatabaseManager;
+import model.UserData;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -16,6 +17,8 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class SqlDataAccessTests {
     private SqlDataAccess dataAccess;
+    private final UserData user = new UserData("player", BCrypt.hashpw("password", BCrypt.gensalt()),
+            "player@example.com");
 
     @BeforeEach
     public void setup() throws DataAccessException {
@@ -61,15 +64,47 @@ public class SqlDataAccessTests {
         assertEquals(List.of(0, 0, 0), rowCounts());
     }
 
+    @Test
+    public void createUserPersistsAllFieldsAcrossInstances() throws Exception {
+        dataAccess.createUser(user);
+
+        SqlDataAccess other = new SqlDataAccess();
+
+        assertEquals(user, other.getUser(user.username()));
+    }
+
+    @Test
+    public void getUnknownUserReturnsNull() throws Exception {
+        dataAccess.createUser(user);
+
+        assertNull(dataAccess.getUser("missing"));
+        assertNull(dataAccess.getUser(null));
+        assertNull(dataAccess.getUser("' OR '1'='1"));
+    }
+
+    @Test
+    public void createDuplicateUsernamePreservesExistingUser() throws Exception {
+        dataAccess.createUser(user);
+        UserData duplicate = new UserData(user.username(), BCrypt.hashpw("different", BCrypt.gensalt()),
+                "different@example.com");
+
+        assertThrows(DataAccessException.class, () -> dataAccess.createUser(duplicate));
+        assertEquals(user, dataAccess.getUser(user.username()));
+        assertEquals(List.of(1, 0, 0), rowCounts());
+    }
+
+    @Test
+    public void userFieldsWithQuotesRoundTrip() throws Exception {
+        UserData quoted = new UserData("o'connor", user.password(), "o'connor@example.com");
+
+        dataAccess.createUser(quoted);
+
+        assertEquals(quoted, dataAccess.getUser(quoted.username()));
+    }
+
     private void insertFixtures() throws Exception {
+        dataAccess.createUser(user);
         try (var connection = DatabaseManager.getConnection()) {
-            try (var statement = connection.prepareStatement(
-                    "INSERT INTO users (username, password, email) VALUES (?, ?, ?)")) {
-                statement.setString(1, "player");
-                statement.setString(2, BCrypt.hashpw("password", BCrypt.gensalt()));
-                statement.setString(3, "player@example.com");
-                statement.executeUpdate();
-            }
             try (var statement = connection.prepareStatement(
                     "INSERT INTO auths (auth_token, username) VALUES (?, ?)")) {
                 statement.setString(1, "test-token");
