@@ -59,10 +59,21 @@ public class SqlDataAccess implements DataAccess {
     @Override
     public void clear() throws DataAccessException {
         try (var connection = DatabaseManager.getConnection()) {
-            for (String sql : new String[]{"DELETE FROM auths", "DELETE FROM games", "DELETE FROM users"}) {
-                try (var statement = connection.prepareStatement(sql)) {
-                    statement.executeUpdate();
+            connection.setAutoCommit(false);
+            try {
+                for (String sql : new String[]{"DELETE FROM auths", "DELETE FROM games", "DELETE FROM users"}) {
+                    try (var statement = connection.prepareStatement(sql)) {
+                        statement.executeUpdate();
+                    }
                 }
+                connection.commit();
+            } catch (SQLException ex) {
+                try {
+                    connection.rollback();
+                } catch (SQLException rollbackException) {
+                    ex.addSuppressed(rollbackException);
+                }
+                throw ex;
             }
         } catch (SQLException ex) {
             throw new DataAccessException("failed to clear database", ex);
