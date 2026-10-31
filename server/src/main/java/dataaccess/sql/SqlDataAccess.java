@@ -201,6 +201,23 @@ public class SqlDataAccess implements DataAccess {
 
     @Override
     public void updateGame(GameData game) throws DataAccessException {
-        throw new UnsupportedOperationException("Not implemented yet");
+        String sql = """
+                UPDATE games
+                SET white_username = ?, black_username = ?, game_name = ?, game = ?
+                WHERE game_id = ?
+                """;
+        try (var connection = DatabaseManager.getConnection();
+             var statement = connection.prepareStatement(sql)) {
+            statement.setString(1, game.whiteUsername());
+            statement.setString(2, game.blackUsername());
+            statement.setString(3, game.gameName());
+            statement.setString(4, gson.toJson(game.game()));
+            statement.setInt(5, game.gameID());
+            if (statement.executeUpdate() == 0) {
+                throw new DataAccessException("Game does not exist");
+            }
+        } catch (SQLException ex) {
+            throw new DataAccessException("failed to update game", ex);
+        }
     }
 }

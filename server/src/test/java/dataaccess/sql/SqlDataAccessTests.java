@@ -1,6 +1,8 @@
 package dataaccess.sql;
 
 import chess.ChessGame;
+import chess.ChessMove;
+import chess.ChessPosition;
 import dataaccess.DataAccessException;
 import dataaccess.DatabaseManager;
 import model.AuthData;
@@ -222,6 +224,85 @@ public class SqlDataAccessTests {
         assertEquals(2, games.size());
         assertTrue(games.contains(first));
         assertTrue(games.contains(second));
+    }
+
+    @Test
+    public void updateGamePersistsPlayersAndNameWithoutChangingOtherGames() throws Exception {
+        dataAccess.createUser(user);
+        UserData opponent = new UserData("opponent", user.password(), "opponent@example.com");
+        dataAccess.createUser(opponent);
+        GameData first = dataAccess.createGame("first game");
+        GameData second = dataAccess.createGame("second game");
+        GameData updated = new GameData(first.gameID(), user.username(), opponent.username(),
+                "King's updated game", first.game());
+
+        dataAccess.updateGame(updated);
+        SqlDataAccess other = new SqlDataAccess();
+
+        assertEquals(updated, other.getGame(first.gameID()));
+        assertEquals(second, other.getGame(second.gameID()));
+        Collection<GameData> games = other.listGames();
+        assertEquals(2, games.size());
+        assertTrue(games.contains(updated));
+        assertTrue(games.contains(second));
+    }
+
+    @Test
+    public void updateGamePersistsMovesAndTurnsAcrossInstances() throws Exception {
+        GameData created = dataAccess.createGame("game");
+        created.game().makeMove(new ChessMove(new ChessPosition(2, 5), new ChessPosition(4, 5), null));
+
+        dataAccess.updateGame(created);
+        SqlDataAccess other = new SqlDataAccess();
+        GameData stored = other.getGame(created.gameID());
+
+        assertEquals(created, stored);
+        assertEquals(ChessGame.TeamColor.BLACK, stored.game().getTeamTurn());
+        stored.game().makeMove(new ChessMove(new ChessPosition(7, 5), new ChessPosition(5, 5), null));
+        other.updateGame(stored);
+        GameData afterBlackMove = dataAccess.getGame(created.gameID());
+        assertEquals(stored, afterBlackMove);
+        assertEquals(ChessGame.TeamColor.WHITE, afterBlackMove.game().getTeamTurn());
+    }
+
+    @Test
+    public void updateGameCanClearPlayerAssignments() throws Exception {
+        dataAccess.createUser(user);
+        GameData created = dataAccess.createGame("game");
+        dataAccess.updateGame(new GameData(created.gameID(), user.username(), user.username(),
+                created.gameName(), created.game()));
+
+        dataAccess.updateGame(created);
+
+        assertEquals(created, new SqlDataAccess().getGame(created.gameID()));
+    }
+
+    @Test
+    public void updateUnchangedGameSucceeds() throws Exception {
+        GameData created = dataAccess.createGame("game");
+
+        assertDoesNotThrow(() -> dataAccess.updateGame(created));
+        assertEquals(created, dataAccess.getGame(created.gameID()));
+    }
+
+    @Test
+    public void updateMissingGameFailsWithoutCreatingIt() throws Exception {
+        GameData existing = dataAccess.createGame("existing game");
+        GameData missing = new GameData(Integer.MAX_VALUE, null, null, "missing game", new ChessGame());
+
+        assertThrows(DataAccessException.class, () -> dataAccess.updateGame(missing));
+        assertNull(dataAccess.getGame(missing.gameID()));
+        assertEquals(existing, dataAccess.getGame(existing.gameID()));
+        assertEquals(1, dataAccess.listGames().size());
+    }
+
+    @Test
+    public void updateGameWithNullNamePreservesExistingGame() throws Exception {
+        GameData created = dataAccess.createGame("game");
+        GameData invalid = new GameData(created.gameID(), user.username(), null, null, created.game());
+
+        assertThrows(DataAccessException.class, () -> dataAccess.updateGame(invalid));
+        assertEquals(created, dataAccess.getGame(created.gameID()));
     }
 
     private void insertFixtures() throws Exception {
