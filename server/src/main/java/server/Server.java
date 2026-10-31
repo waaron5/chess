@@ -2,7 +2,8 @@ package server;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonParseException;
-import dataaccess.MemoryDataAccess;
+import dataaccess.DataAccessException;
+import dataaccess.sql.SqlDataAccess;
 import io.javalin.Javalin;
 import service.ChessService;
 import service.ServiceException;
@@ -14,9 +15,16 @@ public class Server {
     private final Javalin javalin;
 
     public Server() {
+        ChessService service;
+        try {
+            service = new ChessService(new SqlDataAccess());
+        } catch (DataAccessException ex) {
+            throw new IllegalStateException("Unable to initialize database", ex);
+        }
+
         javalin = Javalin.create(config -> config.staticFiles.add("web"));
 
-        ServerHandler handler = new ServerHandler(new ChessService(new MemoryDataAccess()));
+        ServerHandler handler = new ServerHandler(service);
         Gson gson = new Gson();
 
         javalin.exception(Exception.class, (exception, context) ->
