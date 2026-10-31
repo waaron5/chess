@@ -12,6 +12,7 @@ import model.UserData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.Collection;
 
 public class SqlDataAccess implements DataAccess {
@@ -184,7 +185,18 @@ public class SqlDataAccess implements DataAccess {
 
     @Override
     public Collection<GameData> listGames() throws DataAccessException {
-        throw new UnsupportedOperationException("Not implemented yet");
+        String sql = "SELECT game_id, white_username, black_username, game_name, game FROM games";
+        try (var connection = DatabaseManager.getConnection();
+             var statement = connection.prepareStatement(sql);
+             var result = statement.executeQuery()) {
+            Collection<GameData> games = new ArrayList<>();
+            while (result.next()) {
+                games.add(readGame(result));
+            }
+            return games;
+        } catch (SQLException ex) {
+            throw new DataAccessException("failed to list games", ex);
+        }
     }
 
     @Override

@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.mindrot.jbcrypt.BCrypt;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -203,6 +204,24 @@ public class SqlDataAccessTests {
     public void createGameWithNullNameFails() throws Exception {
         assertThrows(DataAccessException.class, () -> dataAccess.createGame(null));
         assertEquals(List.of(0, 0, 0), rowCounts());
+    }
+
+    @Test
+    public void listGamesReturnsEmptyCollection() throws Exception {
+        assertTrue(dataAccess.listGames().isEmpty());
+    }
+
+    @Test
+    public void listGamesReturnsAllPersistedGames() throws Exception {
+        GameData first = dataAccess.createGame("King's game");
+        GameData second = dataAccess.createGame("another game");
+        SqlDataAccess other = new SqlDataAccess();
+
+        Collection<GameData> games = other.listGames();
+
+        assertEquals(2, games.size());
+        assertTrue(games.contains(first));
+        assertTrue(games.contains(second));
     }
 
     private void insertFixtures() throws Exception {
