@@ -4,6 +4,7 @@ import chess.ChessGame;
 import com.google.gson.Gson;
 import dataaccess.DataAccessException;
 import dataaccess.DatabaseManager;
+import model.AuthData;
 import model.UserData;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -19,6 +20,7 @@ public class SqlDataAccessTests {
     private SqlDataAccess dataAccess;
     private final UserData user = new UserData("player", BCrypt.hashpw("password", BCrypt.gensalt()),
             "player@example.com");
+    private final AuthData auth = new AuthData("test-token", user.username());
 
     @BeforeEach
     public void setup() throws DataAccessException {
@@ -102,15 +104,70 @@ public class SqlDataAccessTests {
         assertEquals(quoted, dataAccess.getUser(quoted.username()));
     }
 
+    @Test
+    public void createAuthPersistsAcrossInstances() throws Exception {
+        dataAccess.createUser(user);
+        dataAccess.createAuth(auth);
+
+        SqlDataAccess other = new SqlDataAccess();
+
+        assertEquals(auth, other.getAuth(auth.authToken()));
+    }
+
+    @Test
+    public void getUnknownAuthReturnsNull() throws Exception {
+        dataAccess.createUser(user);
+        dataAccess.createAuth(auth);
+
+        assertNull(dataAccess.getAuth("missing"));
+        assertNull(dataAccess.getAuth(null));
+        assertNull(dataAccess.getAuth("' OR '1'='1"));
+    }
+
+    @Test
+    public void createDuplicateTokenPreservesExistingAuth() throws Exception {
+        dataAccess.createUser(user);
+        dataAccess.createAuth(auth);
+        UserData other = new UserData("other", user.password(), "other@example.com");
+        dataAccess.createUser(other);
+        AuthData duplicate = new AuthData(auth.authToken(), other.username());
+
+        assertThrows(DataAccessException.class, () -> dataAccess.createAuth(duplicate));
+        assertEquals(auth, dataAccess.getAuth(auth.authToken()));
+        assertEquals(List.of(2, 1, 0), rowCounts());
+    }
+
+    @Test
+    public void deleteAuthOnlyRemovesRequestedToken() throws Exception {
+        dataAccess.createUser(user);
+        dataAccess.createAuth(auth);
+        AuthData second = new AuthData("second-token", user.username());
+        dataAccess.createAuth(second);
+
+        dataAccess.deleteAuth(auth.authToken());
+        assertDoesNotThrow(() -> dataAccess.deleteAuth(auth.authToken()));
+        SqlDataAccess other = new SqlDataAccess();
+
+        assertNull(other.getAuth(auth.authToken()));
+        assertEquals(second, other.getAuth(second.authToken()));
+        assertEquals(user, other.getUser(user.username()));
+    }
+
+    @Test
+    public void deleteMissingAuthPreservesExistingTokens() throws Exception {
+        dataAccess.createUser(user);
+        dataAccess.createAuth(auth);
+
+        assertDoesNotThrow(() -> dataAccess.deleteAuth("missing"));
+        assertDoesNotThrow(() -> dataAccess.deleteAuth(null));
+        assertDoesNotThrow(() -> dataAccess.deleteAuth("' OR '1'='1"));
+        assertEquals(auth, dataAccess.getAuth(auth.authToken()));
+    }
+
     private void insertFixtures() throws Exception {
         dataAccess.createUser(user);
+        dataAccess.createAuth(auth);
         try (var connection = DatabaseManager.getConnection()) {
-            try (var statement = connection.prepareStatement(
-                    "INSERT INTO auths (auth_token, username) VALUES (?, ?)")) {
-                statement.setString(1, "test-token");
-                statement.setString(2, "player");
-                statement.executeUpdate();
-            }
             try (var statement = connection.prepareStatement(
                     "INSERT INTO games (white_username, game_name, game) VALUES (?, ?, ?)")) {
                 statement.setString(1, "player");

@@ -96,17 +96,44 @@ public class SqlDataAccess implements DataAccess {
 
     @Override
     public void createAuth(AuthData auth) throws DataAccessException {
-        throw new UnsupportedOperationException("Not implemented yet");
+        String sql = "INSERT INTO auths (auth_token, username) VALUES (?, ?)";
+        try (var connection = DatabaseManager.getConnection();
+             var statement = connection.prepareStatement(sql)) {
+            statement.setString(1, auth.authToken());
+            statement.setString(2, auth.username());
+            statement.executeUpdate();
+        } catch (SQLException ex) {
+            throw new DataAccessException("failed to create auth", ex);
+        }
     }
 
     @Override
     public AuthData getAuth(String authToken) throws DataAccessException {
-        throw new UnsupportedOperationException("Not implemented yet");
+        String sql = "SELECT auth_token, username FROM auths WHERE auth_token = ?";
+        try (var connection = DatabaseManager.getConnection();
+             var statement = connection.prepareStatement(sql)) {
+            statement.setString(1, authToken);
+            try (var result = statement.executeQuery()) {
+                if (result.next()) {
+                    return new AuthData(result.getString("auth_token"), result.getString("username"));
+                }
+                return null;
+            }
+        } catch (SQLException ex) {
+            throw new DataAccessException("failed to get auth", ex);
+        }
     }
 
     @Override
     public void deleteAuth(String authToken) throws DataAccessException {
-        throw new UnsupportedOperationException("Not implemented yet");
+        String sql = "DELETE FROM auths WHERE auth_token = ?";
+        try (var connection = DatabaseManager.getConnection();
+             var statement = connection.prepareStatement(sql)) {
+            statement.setString(1, authToken);
+            statement.executeUpdate();
+        } catch (SQLException ex) {
+            throw new DataAccessException("failed to delete auth", ex);
+        }
     }
 
     @Override
