@@ -7,6 +7,7 @@ import dataaccess.DataAccess;
 import dataaccess.DataAccessException;
 import model.AuthData;
 import model.UserData;
+import org.mindrot.jbcrypt.BCrypt;
 import java.util.UUID;
 
 public class ChessService {
@@ -27,7 +28,8 @@ public class ChessService {
         if (dataAccess.getUser(user.username()) != null) {
             throw new ServiceException(403, "already taken");
         }
-        dataAccess.createUser(user);
+        String hashedPassword = BCrypt.hashpw(user.password(), BCrypt.gensalt());
+        dataAccess.createUser(new UserData(user.username(), hashedPassword, user.email()));
         return createAuth(user.username());
     }
 
@@ -36,7 +38,7 @@ public class ChessService {
             throw new ServiceException(400, "bad request");
         }
         UserData user = dataAccess.getUser(request.username());
-        if (user == null || !user.password().equals(request.password())) {
+        if (user == null || !BCrypt.checkpw(request.password(), user.password())) {
             throw new ServiceException(401, "unauthorized");
         }
         return createAuth(user.username());

@@ -11,6 +11,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mindrot.jbcrypt.BCrypt;
 
 import java.util.Collection;
 import java.util.stream.Stream;
@@ -32,7 +33,12 @@ public class ChessServiceTests {
 
     @Test
     public void registerStoresUserAndAuth() {
-        assertEquals(user, dataAccess.getUser(user.username()));
+        UserData storedUser = dataAccess.getUser(user.username());
+        assertNotNull(storedUser);
+        assertEquals(user.username(), storedUser.username());
+        assertEquals(user.email(), storedUser.email());
+        assertNotEquals(user.password(), storedUser.password());
+        assertTrue(BCrypt.checkpw(user.password(), storedUser.password()));
         assertEquals(user.username(), auth.username());
         assertNotNull(auth.authToken());
         assertFalse(auth.authToken().isBlank());
@@ -40,11 +46,24 @@ public class ChessServiceTests {
     }
 
     @Test
+    public void registerSamePasswordUsesDifferentSalts() throws Exception {
+        UserData other = new UserData("other", user.password(), "other@example.com");
+        service.register(other);
+
+        String firstHash = dataAccess.getUser(user.username()).password();
+        String secondHash = dataAccess.getUser(other.username()).password();
+        assertNotEquals(firstHash, secondHash);
+        assertTrue(BCrypt.checkpw(user.password(), firstHash));
+        assertTrue(BCrypt.checkpw(other.password(), secondHash));
+    }
+
+    @Test
     public void registerDuplicateUsername() {
+        UserData storedUser = dataAccess.getUser(user.username());
         UserData duplicate = new UserData(user.username(), "different", "different@example.com");
         ServiceException exception = assertThrows(ServiceException.class, () -> service.register(duplicate));
         assertError(exception, 403, "already taken");
-        assertEquals(user, dataAccess.getUser(user.username()));
+        assertEquals(storedUser, dataAccess.getUser(user.username()));
     }
 
     @ParameterizedTest
@@ -105,12 +124,13 @@ public class ChessServiceTests {
 
     @Test
     public void logoutOnlyDeletesRequestedToken() throws Exception {
+        UserData storedUser = dataAccess.getUser(user.username());
         AuthData other = service.login(user);
         service.logout(auth.authToken());
 
         assertNull(dataAccess.getAuth(auth.authToken()));
         assertEquals(other, dataAccess.getAuth(other.authToken()));
-        assertEquals(user, dataAccess.getUser(user.username()));
+        assertEquals(storedUser, dataAccess.getUser(user.username()));
         assertTrue(service.listGames(other.authToken()).isEmpty());
     }
 
