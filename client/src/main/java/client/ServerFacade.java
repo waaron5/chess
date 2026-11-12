@@ -34,6 +34,10 @@ public class ServerFacade {
         return makeRequest("POST", "/session", new UserData(username, password, null), null, AuthData.class);
     }
 
+    public void logout(String authToken) throws ResponseException {
+        makeRequest("DELETE", "/session", null, authToken, null);
+    }
+
     private <T> T makeRequest(String method, String path, Object body, String authToken, Class<T> responseClass)
             throws ResponseException {
         HttpRequest.Builder request = HttpRequest.newBuilder(URI.create(serverUrl + path))

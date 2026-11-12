@@ -68,4 +68,16 @@ public class ServerFacadeTests {
         Assertions.assertThrows(ResponseException.class, () -> facade.login("player1", "wrong"));
     }
 
+    @Test
+    public void logoutSucceeds() throws ResponseException {
+        var authData = facade.register("player1", "password", "p1@email.com");
+        facade.logout(authData.authToken());
+        Assertions.assertThrows(ResponseException.class, () -> facade.logout(authData.authToken()));
+    }
+
+    @Test
+    public void logoutFailsWithBadToken() {
+        Assertions.assertThrows(ResponseException.class, () -> facade.logout("badToken"));
+    }
+
 }
