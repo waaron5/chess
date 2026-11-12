@@ -2,6 +2,10 @@ package client;
 
 import com.google.gson.Gson;
 import model.AuthData;
+import model.CreateGameRequest;
+import model.CreateGameResult;
+import model.GameListEntry;
+import model.ListGamesResult;
 import model.UserData;
 
 import java.io.IOException;
@@ -9,6 +13,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.Collection;
 import java.util.Map;
 
 public class ServerFacade {
@@ -36,6 +41,14 @@ public class ServerFacade {
 
     public void logout(String authToken) throws ResponseException {
         makeRequest("DELETE", "/session", null, authToken, null);
+    }
+
+    public int createGame(String authToken, String gameName) throws ResponseException {
+        return makeRequest("POST", "/game", new CreateGameRequest(gameName), authToken, CreateGameResult.class).gameID();
+    }
+
+    public Collection<GameListEntry> listGames(String authToken) throws ResponseException {
+        return makeRequest("GET", "/game", null, authToken, ListGamesResult.class).games();
     }
 
     private <T> T makeRequest(String method, String path, Object body, String authToken, Class<T> responseClass)

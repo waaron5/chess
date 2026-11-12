@@ -80,4 +80,29 @@ public class ServerFacadeTests {
         Assertions.assertThrows(ResponseException.class, () -> facade.logout("badToken"));
     }
 
+    @Test
+    public void createGameSucceeds() throws ResponseException {
+        var authData = facade.register("player1", "password", "p1@email.com");
+        int gameID = facade.createGame(authData.authToken(), "game1");
+        Assertions.assertTrue(gameID > 0);
+    }
+
+    @Test
+    public void createGameFailsWithBadToken() {
+        Assertions.assertThrows(ResponseException.class, () -> facade.createGame("badToken", "game1"));
+    }
+
+    @Test
+    public void listGamesSucceeds() throws ResponseException {
+        var authData = facade.register("player1", "password", "p1@email.com");
+        facade.createGame(authData.authToken(), "game1");
+        facade.createGame(authData.authToken(), "game2");
+        Assertions.assertEquals(2, facade.listGames(authData.authToken()).size());
+    }
+
+    @Test
+    public void listGamesFailsWithBadToken() {
+        Assertions.assertThrows(ResponseException.class, () -> facade.listGames("badToken"));
+    }
+
 }
