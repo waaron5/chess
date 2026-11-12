@@ -1,8 +1,12 @@
 package server;
 
-import chess.ChessGame;
 import com.google.gson.Gson;
+import model.CreateGameRequest;
+import model.CreateGameResult;
 import model.GameData;
+import model.GameListEntry;
+import model.JoinGameRequest;
+import model.ListGamesResult;
 import model.UserData;
 import service.ChessService;
 import io.javalin.http.Context;
@@ -44,13 +48,13 @@ public class ServerHandler {
         for (GameData game : service.listGames(context.header("authorization"))) {
             games.add(new GameListEntry(game.gameID(), game.whiteUsername(), game.blackUsername(), game.gameName()));
         }
-        respond(context, Map.of("games", games));
+        respond(context, new ListGamesResult(games));
     }
 
     public void createGame(Context context) throws ServiceException, DataAccessException {
         CreateGameRequest request = readBody(context, CreateGameRequest.class);
         GameData game = service.createGame(context.header("authorization"), request.gameName());
-        respond(context, Map.of("gameID", game.gameID()));
+        respond(context, new CreateGameResult(game.gameID()));
     }
 
     public void joinGame(Context context) throws ServiceException, DataAccessException {
@@ -70,14 +74,5 @@ public class ServerHandler {
     private void respond(Context context, Object result) {
         context.contentType("application/json")
                 .result(gson.toJson(result));
-    }
-
-    private record CreateGameRequest(String gameName) {
-    }
-
-    private record JoinGameRequest(ChessGame.TeamColor playerColor, int gameID) {
-    }
-
-    private record GameListEntry(int gameID, String whiteUsername, String blackUsername, String gameName) {
     }
 }
