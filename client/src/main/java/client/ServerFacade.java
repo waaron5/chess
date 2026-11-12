@@ -1,0 +1,55 @@
+package client;
+
+import com.google.gson.Gson;
+
+import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.util.Map;
+
+public class ServerFacade {
+    private static final int UNREACHABLE = 0;
+
+    private final String serverUrl;
+    private final HttpClient httpClient = HttpClient.newHttpClient();
+    private final Gson gson = new Gson();
+
+    public ServerFacade(int port) {
+        serverUrl = "http://localhost:" + port;
+    }
+
+    public void clear() throws ResponseException {
+        makeRequest("DELETE", "/db", null, null, null);
+    }
+
+    private <T> T makeRequest(String method, String path, Object body, String authToken, Class<T> responseClass)
+            throws ResponseException {
+        HttpRequest.Builder request = HttpRequest.newBuilder(URI.create(serverUrl + path))
+                .method(method, body == null
+                        ? HttpRequest.BodyPublishers.noBody()
+                        : HttpRequest.BodyPublishers.ofString(gson.toJson(body)));
+        if (authToken != null) {
+            request.header("authorization", authToken);
+        }
+
+        HttpResponse<String> response;
+        try {
+            response = httpClient.send(request.build(), HttpResponse.BodyHandlers.ofString());
+        } catch (IOException | InterruptedException e) {
+            throw new ResponseException(UNREACHABLE, "Unable to reach the server");
+        }
+
+        int status = response.statusCode();
+        if (status / 100 != 2) {
+            throw new ResponseException(status, errorMessage(response.body()));
+        }
+        return responseClass == null ? null : gson.fromJson(response.body(), responseClass);
+    }
+
+    private String errorMessage(String body) {
+        Map<?, ?> error = gson.fromJson(body, Map.class);
+        return error != null && error.get("message") != null ? error.get("message").toString() : "Unknown error";
+    }
+}
