@@ -29,8 +29,10 @@ public class ServerFacadeTests {
 
 
     @Test
-    public void clearSucceeds() {
-        Assertions.assertDoesNotThrow(() -> facade.clear());
+    public void clearSucceeds() throws ResponseException {
+        facade.register("player1", "password", "p1@email.com");
+        facade.clear();
+        Assertions.assertThrows(ResponseException.class, () -> facade.login("player1", "password"));
     }
 
     @Test
@@ -38,6 +40,32 @@ public class ServerFacadeTests {
         int unusedPort = 1;
         var unreachableFacade = new ServerFacade(unusedPort);
         Assertions.assertThrows(ResponseException.class, unreachableFacade::clear);
+    }
+
+    @Test
+    public void registerSucceeds() throws ResponseException {
+        var authData = facade.register("player1", "password", "p1@email.com");
+        Assertions.assertTrue(authData.authToken().length() > 10);
+    }
+
+    @Test
+    public void registerFailsForDuplicateUsername() throws ResponseException {
+        facade.register("player1", "password", "p1@email.com");
+        Assertions.assertThrows(ResponseException.class,
+                () -> facade.register("player1", "other", "other@email.com"));
+    }
+
+    @Test
+    public void loginSucceeds() throws ResponseException {
+        facade.register("player1", "password", "p1@email.com");
+        var authData = facade.login("player1", "password");
+        Assertions.assertEquals("player1", authData.username());
+    }
+
+    @Test
+    public void loginFailsWithWrongPassword() throws ResponseException {
+        facade.register("player1", "password", "p1@email.com");
+        Assertions.assertThrows(ResponseException.class, () -> facade.login("player1", "wrong"));
     }
 
 }

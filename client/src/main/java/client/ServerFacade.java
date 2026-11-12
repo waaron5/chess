@@ -1,6 +1,8 @@
 package client;
 
 import com.google.gson.Gson;
+import model.AuthData;
+import model.UserData;
 
 import java.io.IOException;
 import java.net.URI;
@@ -22,6 +24,14 @@ public class ServerFacade {
 
     public void clear() throws ResponseException {
         makeRequest("DELETE", "/db", null, null, null);
+    }
+
+    public AuthData register(String username, String password, String email) throws ResponseException {
+        return makeRequest("POST", "/user", new UserData(username, password, email), null, AuthData.class);
+    }
+
+    public AuthData login(String username, String password) throws ResponseException {
+        return makeRequest("POST", "/session", new UserData(username, password, null), null, AuthData.class);
     }
 
     private <T> T makeRequest(String method, String path, Object body, String authToken, Class<T> responseClass)
