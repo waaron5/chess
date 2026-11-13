@@ -7,9 +7,6 @@ import model.AuthData;
 import java.util.Arrays;
 
 public class PreloginClient implements Client {
-    private static final int UNAUTHORIZED = 401;
-    private static final int ALREADY_TAKEN = 403;
-
     private final ServerFacade facade;
     private Client next = this;
 
@@ -42,7 +39,7 @@ public class PreloginClient implements Client {
         try {
             return enterPostlogin(facade.register(params[0], params[1], params[2]));
         } catch (ResponseException e) {
-            if (e.getStatusCode() == ALREADY_TAKEN) {
+            if (e.getStatusCode() == ResponseException.ALREADY_TAKEN) {
                 return "That username is already taken.";
             }
             throw e;
@@ -56,7 +53,7 @@ public class PreloginClient implements Client {
         try {
             return enterPostlogin(facade.login(params[0], params[1]));
         } catch (ResponseException e) {
-            if (e.getStatusCode() == UNAUTHORIZED) {
+            if (e.getStatusCode() == ResponseException.UNAUTHORIZED) {
                 return "Incorrect username or password.";
             }
             throw e;
