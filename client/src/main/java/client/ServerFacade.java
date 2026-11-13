@@ -19,8 +19,6 @@ import java.util.Collection;
 import java.util.Map;
 
 public class ServerFacade {
-    private static final int UNREACHABLE = 0;
-
     private final String serverUrl;
     private final HttpClient httpClient = HttpClient.newHttpClient();
     private final Gson gson = new Gson();
@@ -71,7 +69,7 @@ public class ServerFacade {
         try {
             response = httpClient.send(request.build(), HttpResponse.BodyHandlers.ofString());
         } catch (IOException | InterruptedException e) {
-            throw new ResponseException(UNREACHABLE, "Unable to reach the server");
+            throw new ResponseException(ResponseException.UNREACHABLE, "Unable to reach the server");
         }
 
         int status = response.statusCode();
