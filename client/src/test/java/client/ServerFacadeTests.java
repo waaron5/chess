@@ -1,5 +1,6 @@
 package client;
 
+import chess.ChessGame;
 import org.junit.jupiter.api.*;
 import server.Server;
 
@@ -103,6 +104,25 @@ public class ServerFacadeTests {
     @Test
     public void listGamesFailsWithBadToken() {
         Assertions.assertThrows(ResponseException.class, () -> facade.listGames("badToken"));
+    }
+
+    @Test
+    public void joinGameSucceeds() throws ResponseException {
+        var authData = facade.register("player1", "password", "p1@email.com");
+        int gameID = facade.createGame(authData.authToken(), "game1");
+        facade.joinGame(authData.authToken(), gameID, ChessGame.TeamColor.WHITE);
+        var game = facade.listGames(authData.authToken()).iterator().next();
+        Assertions.assertEquals("player1", game.whiteUsername());
+    }
+
+    @Test
+    public void joinGameFailsWhenColorTaken() throws ResponseException {
+        var authData = facade.register("player1", "password", "p1@email.com");
+        int gameID = facade.createGame(authData.authToken(), "game1");
+        facade.joinGame(authData.authToken(), gameID, ChessGame.TeamColor.WHITE);
+        var otherAuth = facade.register("player2", "password", "p2@email.com");
+        Assertions.assertThrows(ResponseException.class,
+                () -> facade.joinGame(otherAuth.authToken(), gameID, ChessGame.TeamColor.WHITE));
     }
 
 }

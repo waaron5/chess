@@ -1,10 +1,12 @@
 package client;
 
+import chess.ChessGame;
 import com.google.gson.Gson;
 import model.AuthData;
 import model.CreateGameRequest;
 import model.CreateGameResult;
 import model.GameListEntry;
+import model.JoinGameRequest;
 import model.ListGamesResult;
 import model.UserData;
 
@@ -49,6 +51,10 @@ public class ServerFacade {
 
     public Collection<GameListEntry> listGames(String authToken) throws ResponseException {
         return makeRequest("GET", "/game", null, authToken, ListGamesResult.class).games();
+    }
+
+    public void joinGame(String authToken, int gameID, ChessGame.TeamColor color) throws ResponseException {
+        makeRequest("PUT", "/game", new JoinGameRequest(color, gameID), authToken, null);
     }
 
     private <T> T makeRequest(String method, String path, Object body, String authToken, Class<T> responseClass)
