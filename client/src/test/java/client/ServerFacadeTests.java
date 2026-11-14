@@ -4,7 +4,6 @@ import chess.ChessGame;
 import org.junit.jupiter.api.*;
 import server.Server;
 
-
 public class ServerFacadeTests {
 
     private static Server server;
@@ -27,7 +26,6 @@ public class ServerFacadeTests {
     void clearDatabase() throws ResponseException {
         facade.clear();
     }
-
 
     @Test
     public void clearSucceeds() throws ResponseException {

@@ -170,7 +170,8 @@ public class ChessServiceTests {
     @NullAndEmptySource
     @ValueSource(strings = {" "})
     public void createGameBadRequest(String name) {
-        ServiceException exception = assertThrows(ServiceException.class, () -> service.createGame(auth.authToken(), name));
+        ServiceException exception = assertThrows(ServiceException.class,
+                () -> service.createGame(auth.authToken(), name));
         assertError(exception, 400, "bad request");
         assertTrue(dataAccess.listGames().isEmpty());
     }

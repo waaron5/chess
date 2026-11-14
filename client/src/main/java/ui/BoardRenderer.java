@@ -5,11 +5,10 @@ import chess.ChessGame;
 import chess.ChessPiece;
 import chess.ChessPosition;
 
+import static chess.ChessBoard.BOARD_SIZE;
 import static ui.EscapeSequences.*;
 
 public class BoardRenderer {
-    private static final int BOARD_SIZE = 8;
-
     public static String render(ChessBoard board, ChessGame.TeamColor perspective) {
         boolean whiteView = perspective == ChessGame.TeamColor.WHITE;
         StringBuilder out = new StringBuilder();

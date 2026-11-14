@@ -44,7 +44,8 @@ public class ServerFacade {
     }
 
     public int createGame(String authToken, String gameName) throws ResponseException {
-        return makeRequest("POST", "/game", new CreateGameRequest(gameName), authToken, CreateGameResult.class).gameID();
+        var request = new CreateGameRequest(gameName);
+        return makeRequest("POST", "/game", request, authToken, CreateGameResult.class).gameID();
     }
 
     public Collection<GameListEntry> listGames(String authToken) throws ResponseException {
