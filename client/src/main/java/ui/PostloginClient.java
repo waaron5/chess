@@ -129,8 +129,9 @@ public class PostloginClient implements Client {
     }
 
     private String logout() throws ResponseException {
-        facade.logout(authToken);
+        // Always return to prelogin so the user can still quit if the server is down.
         next = new PreloginClient(facade);
+        facade.logout(authToken);
         return "Logged out.";
     }
 
